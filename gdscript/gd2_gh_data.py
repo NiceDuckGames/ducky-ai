@@ -6,7 +6,7 @@ from datasets import Dataset
 from git import Repo
 import os
 
-access_token = "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"
+access_token = os.environ['GH_API_KEY']
 
 headers = {
     "Accept": "application/vnd.github+json",
