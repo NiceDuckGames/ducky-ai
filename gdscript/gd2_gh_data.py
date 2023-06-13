@@ -30,36 +30,51 @@ def process_repositories(repo_urls):
         repo_path = f"repos/{repo[1]}"
         repo_url = repo[0]
         repo_name = repo[1]
-        Repo.clone_from(repo_url, repo_path, env={"GIT_TERMINAL_PROMPT": "0"}, progress=None)
+        
+        # make sure there isn't an existing folder
+        try:
+            os.system(f"rm -rf {repo_path}") 
+        except:
+            continue
 
-        # Read the contents of .gd files
-        for root, dirs, files in os.walk(repo_path):
-            for file in tqdm(files):
-                if file.endswith(".gd"):
-                    file_path = os.path.join(root, file)
-                    with open(file_path, 'r', encoding='utf-8') as f:
-                        try:
-                            file_contents = f.read()
+        try:
+            Repo.clone_from(repo_url, repo_path, env={"GIT_TERMINAL_PROMPT": "0"}, progress=None)
 
-                            # Calculate line statistics
-                            lines = file_contents.split("\n")
-                            line_lengths = [len(line) for line in lines if line.strip()]
-                            avg_line_length = sum(line_lengths) / len(line_lengths) if line_lengths else 0
-                            max_line_length = max(line_lengths) if line_lengths else 0
+            # Read the contents of .gd files
+            for root, dirs, files in os.walk(repo_path):
+                for file in tqdm(files):
+                    if file.endswith(".gd") or file.endswith(".tscn"):
+                        file_path = os.path.join(root, file)
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            try:
+                                file_contents = f.read()
 
-                            # Calculate alphanumerical fraction
-                            alphanum_chars = sum(c.isalnum() for c in file_contents)
-                            alphanum_fraction = alphanum_chars / len(file_contents) if len(file_contents) > 0 else 0             
+                                # Calculate line statistics
+                                lines = file_contents.split("\n")
+                                line_lengths = [len(line) for line in lines if line.strip()]
+                                avg_line_length = sum(line_lengths) / len(line_lengths) if line_lengths else 0
+                                max_line_length = max(line_lengths) if line_lengths else 0
 
-                            file_details.append({
-                                "content": file_contents,
-                                "avg_line_length": avg_line_length,
-                                "max_line_length": max_line_length,
-                                "alphanum_fraction": alphanum_fraction,
-                            })
-                        except:
-                            # just skip the file if we encounter problems while reading it.
-                            continue
+                                # Calculate alphanumerical fraction
+                                alphanum_chars = sum(c.isalnum() for c in file_contents)
+                                alphanum_fraction = alphanum_chars / len(file_contents) if len(file_contents) > 0 else 0             
+
+                                details = {
+                                    "content": file_contents,
+                                    "avg_line_length": avg_line_length,
+                                    "max_line_length": max_line_length,
+                                    "alphanum_fraction": alphanum_fraction,
+                                 }
+                                if file.endswith(".gd"):
+                                    file_details.append(details)
+                                elif file.endswith(".tscn"):
+                                    tscn_details.append(details)
+
+                            except:
+                                # just skip the file if we encounter problems while reading it.
+                                continue
+        except:
+            continue
 
         # Delete the repository from the file system
         os.system(f"rm -rf {repo_path}")
@@ -68,6 +83,7 @@ def process_repositories(repo_urls):
 
 # Create an empty list to store the file details
 file_details = []
+tscn_details = []
 repo_urls = set()
 
 # Send the initial request to the API and get the response
@@ -113,8 +129,11 @@ if response.status_code == 200:
     # Convert the file details list into a DataFrame
     df = pd.DataFrame(file_details)
     print(df)
+
+    tscn_df = pd.DataFrame(tscn_details)
     
     df.to_parquet('gdscript2.parquet')
+    tscn_df.to_parquet('tscn.parquet')
     
     # Define the dataset schema
     schema = {
