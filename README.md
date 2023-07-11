@@ -8,6 +8,13 @@ Ducky is trained on open-source data that allows it to serve as a helpful game d
 
 ### Installation
 
+- install pypyr
+- install llm-foundry deps
+```
+cd llm-foundry
+pip install -e ".[gpu]"
+```
+
 ### Running finetuneing tasks
 
 ### Changing the seed model
