@@ -1,7 +1,0 @@
-transformers
-tokenizers
-deepspeed==0.9.1
-datasets
-accelerate
-pytorch
-wandb
